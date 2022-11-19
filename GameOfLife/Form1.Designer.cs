@@ -55,7 +55,7 @@
             this.ClientSize = new System.Drawing.Size(1029, 1049);
             this.Controls.Add(this.lblGenCount);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Left Mouse = Random, Right Mouse = Spawn, Space = Clear";
             this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Form1_KeyPress);
             this.Leave += new System.EventHandler(this.Form1_Leave);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Form1_MouseDown);
