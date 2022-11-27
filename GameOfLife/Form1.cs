@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace GameOfLife
 {
@@ -18,14 +19,28 @@ namespace GameOfLife
         public Form1()
         {
             InitializeComponent();
-            ImageA = new Bitmap(WIDTH, HEIGHT);
-            ImageB = new Bitmap(WIDTH, HEIGHT);
+            ImageA = new Bitmap(WIDTH, HEIGHT, PixelFormat.Format32bppArgb);
+            ImageB = new Bitmap(WIDTH, HEIGHT, PixelFormat.Format32bppArgb);
+            BitmapData bmd = ImageA.LockBits(new Rectangle(0, 0, WIDTH, HEIGHT), ImageLockMode.ReadOnly, ImageA.PixelFormat);
+            ImageBytes = new byte[Math.Abs(bmd.Stride) * bmd.Height];
+            ImageA.UnlockBits(bmd);
+
+            using (Graphics g = Graphics.FromImage(ImageA))
+            {
+                g.Clear(DEAD_COLOR);
+            }
+            using (Graphics g = Graphics.FromImage(ImageB))
+            {
+                g.Clear(DEAD_COLOR);
+            }
+
             ActiveImage = enuActiveImage.A;
             //Randomize();
         }
 
         private Bitmap ImageA;
         private Bitmap ImageB;
+        private byte[] ImageBytes;
 
         private byte[,] liveNeigbors = new byte[WIDTH, HEIGHT];
         private bool[,] isAlive = new bool[WIDTH, HEIGHT];
@@ -177,16 +192,20 @@ namespace GameOfLife
                 ClearScreen = false;
             }
 
-            using (Graphics gB= Graphics.FromImage(imgB))   // Destination Image
+            BitmapData bmd = imgB.LockBits(new Rectangle(0, 0, WIDTH, HEIGHT), ImageLockMode.ReadWrite, imgB.PixelFormat);
+            try
             {
-                gB.Clear(DEAD_COLOR);
-                for (int y = 1; y < HEIGHT - 1; y++)
+                System.Runtime.InteropServices.Marshal.Copy(bmd.Scan0, ImageBytes, 0 , ImageBytes.Length);
+                int pixelsz = 4;
+                for (int y = 0; y < bmd.Height; y++)
                 {
-                    for (int x = 1; x < WIDTH - 1; x++)
+                    int row = y * bmd.Stride;
+                    for (int x = 0; x < bmd.Width; x++)
                     {
-                        if (isAlive[x,y])
+                        int px = row + x * pixelsz;
+                        if (isAlive[x, y])
                         {
-                            if (liveNeigbors[x,y] < MinSurvivePop || liveNeigbors[x, y] > MaxSurvivePop)
+                            if (liveNeigbors[x, y] < MinSurvivePop || liveNeigbors[x, y] > MaxSurvivePop)
                                 isAlive[x, y] = false;
                         }
                         else if (liveNeigbors[x, y] == 3)
@@ -195,11 +214,49 @@ namespace GameOfLife
                         }
                         if (isAlive[x, y])
                         {
-                            gB.FillRectangle(LIVE_BRUSH, x, y, 1, 1);
+                            ImageBytes[px] = 0;
+                            ImageBytes[px + 1] = 0;
+                            ImageBytes[px + 2] = 0;
+                        }
+                        else
+                        {
+                            ImageBytes[px] = 255;
+                            ImageBytes[px + 1] = 255;
+                            ImageBytes[px + 2] = 255;
                         }
                     }
                 }
+                System.Runtime.InteropServices.Marshal.Copy(ImageBytes, 0, bmd.Scan0, ImageBytes.Length);
             }
+            finally
+            {
+                imgB.UnlockBits(bmd);
+            }
+
+            //using (Graphics gB = Graphics.FromImage(imgB))   // Destination Image
+            //{
+            //    gB.Clear(DEAD_COLOR);
+            //    for (int y = 1; y < HEIGHT - 1; y++)
+            //    {
+            //        for (int x = 1; x < WIDTH - 1; x++)
+            //        {
+            //            if (isAlive[x, y])
+            //            {
+            //                if (liveNeigbors[x, y] < MinSurvivePop || liveNeigbors[x, y] > MaxSurvivePop)
+            //                    isAlive[x, y] = false;
+            //            }
+            //            else if (liveNeigbors[x, y] == 3)
+            //            {
+            //                isAlive[x, y] = true;
+            //            }
+            //            if (isAlive[x, y])
+            //            {
+            //                gB.FillRectangle(LIVE_BRUSH, x, y, 1, 1);
+            //            }
+            //        }
+            //    }
+            //}
+
             using (Graphics g = this.CreateGraphics())
             {
                 g.InterpolationMode = InterpolationMode.NearestNeighbor;

@@ -36,7 +36,7 @@
             // tmrGenTick
             // 
             this.tmrGenTick.Enabled = true;
-            this.tmrGenTick.Interval = 16;
+            this.tmrGenTick.Interval = 1;
             this.tmrGenTick.Tick += new System.EventHandler(this.tmrGenTick_Tick);
             // 
             // lblGenCount
